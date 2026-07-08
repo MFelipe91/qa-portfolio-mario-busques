@@ -1,0 +1,173 @@
+{
+  "info": {
+    "name": "QA Portfolio — Mario Felipe Busqués",
+    "description": "Colección de pruebas de API para portafolio QA. Incluye tests funcionales, de rendimiento y de seguridad.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 — GET Usuario (Happy Path)",
+      "request": {
+        "method": "GET",
+        "url": "https://jsonplaceholder.typicode.com/users/1",
+        "description": "TC-001: Obtener datos de usuario existente. Verifica status 200, estructura del body y tiempo de respuesta."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// TC-001: Status correcto",
+              "pm.test('TC-001 | Status 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// TC-002: Tiempo de respuesta",
+              "pm.test('TC-002 | Tiempo menor a 1000ms', function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(1000);",
+              "});",
+              "",
+              "// TC-003: Campos obligatorios",
+              "pm.test('TC-003 | Body tiene campos name y email', function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json).to.have.property('name');",
+              "    pm.expect(json).to.have.property('email');",
+              "    pm.expect(json.name).to.be.a('string');",
+              "});",
+              "",
+              "// TC-004: Email válido",
+              "pm.test('TC-004 | Email tiene formato correcto', function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json.email).to.include('@');",
+              "});",
+              "",
+              "// Guardar datos para siguiente request",
+              "var json = pm.response.json();",
+              "pm.environment.set('userId', json.id);",
+              "console.log('Usuario obtenido:', json.name);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 — GET Usuario Inexistente (Test Negativo)",
+      "request": {
+        "method": "GET",
+        "url": "https://jsonplaceholder.typicode.com/users/9999",
+        "description": "TC-005: Verificar que un usuario inexistente retorna 404. Test negativo básico."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// TC-005: Usuario inexistente debe retornar 404",
+              "pm.test('TC-005 | Usuario inexistente retorna 404', function () {",
+              "    pm.response.to.have.status(404);",
+              "});",
+              "",
+              "// TC-006: Body vacío en 404",
+              "pm.test('TC-006 | Body vacío para recurso inexistente', function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(Object.keys(json).length).to.equal(0);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 — POST Datos (Test Funcional + Rendimiento)",
+      "request": {
+        "method": "POST",
+        "url": "https://httpbin.org/post",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"email\": \"mario@teckware.cl\",\n    \"monto\": 50000,\n    \"rutDestino\": \"87654321-0\"\n}"
+        },
+        "description": "TC-007 al TC-010: Test funcional y de rendimiento de endpoint POST. Simula envío de datos de transferencia."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// TC-007: Status correcto",
+              "pm.test('TC-007 | Status 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// TC-008: Content-Type JSON",
+              "pm.test('TC-008 | Content-Type es JSON', function () {",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});",
+              "",
+              "// TC-009: Servidor recibió los datos correctamente",
+              "pm.test('TC-009 | Servidor recibió email correcto', function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json.json.email).to.equal('mario@teckware.cl');",
+              "});",
+              "",
+              "// TC-010: Monto recibido es número",
+              "pm.test('TC-010 | Monto es número válido', function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json.json.monto).to.be.a('number');",
+              "    pm.expect(json.json.monto).to.be.above(0);",
+              "});",
+              "",
+              "// Log de rendimiento",
+              "console.log('Tiempo de respuesta:', pm.response.responseTime + 'ms');",
+              "if (pm.response.responseTime > 5000) {",
+              "    console.warn('ALERTA: Respuesta supera SLA de 5000ms');",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 — GET Lista Posts (Test de Estructura)",
+      "request": {
+        "method": "GET",
+        "url": "https://jsonplaceholder.typicode.com/posts",
+        "description": "TC-011 al TC-013: Verificar estructura de respuesta de lista. Test de array y paginación."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// TC-011: Status 200",
+              "pm.test('TC-011 | Status 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// TC-012: Respuesta es array",
+              "pm.test('TC-012 | Respuesta es un array', function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json).to.be.an('array');",
+              "    pm.expect(json.length).to.be.above(0);",
+              "});",
+              "",
+              "// TC-013: Cada item tiene campos obligatorios",
+              "pm.test('TC-013 | Cada post tiene id, title y body', function () {",
+              "    var json = pm.response.json();",
+              "    json.slice(0, 5).forEach(function(post) {",
+              "        pm.expect(post).to.have.property('id');",
+              "        pm.expect(post).to.have.property('title');",
+              "        pm.expect(post).to.have.property('body');",
+              "    });",
+              "});",
+              "",
+              "console.log('Total posts recibidos:', pm.response.json().length);"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
